@@ -2,6 +2,9 @@ import pygame
 import time
 import xlsxwriter
 import math
+from builtins import str
+from cmath import sqrt
+from _ast import Str
 
 
 pygame.init()
@@ -18,18 +21,21 @@ spdlist=[]
 dislist = []
 rholist = []
 Fblist = []
+airlist=[]
 
 g_0 = 9.82 #Gravity
 k = 0.005 #Speed of sim
 t = 1
 runtime = 9999999 #Length of sim in secounds
-length = 39000
+length = 38969.4
 h = length
 A = 0.6
-C_d = 1.3
+C_d = 1.1
 v = 0
 re = 6371000
 mass = 140
+gamma = 1.4
+R = 286
 
 screen = pygame.display.set_mode((width, height))
 
@@ -38,7 +44,7 @@ if 0.1 >= t > 1:
 if t <= 1:
     k = 0.05
 if t < 0.1:
-    k= 0.05
+    k= 0.0005
     
 class Ball:
     
@@ -55,7 +61,9 @@ class Ball:
         self.g_h = 0
         self.g_r = 0
         self.vv = 0
-    
+        self.p = 0
+        self.temp = 0
+        
     def display(self):
         ball = pygame.draw.circle(screen, self.color, (int(self.x),int(self.y/100)),size,0)
         #line = pygame.draw.circle(screen, self.color, (int(self.x+50),int(self.y/100)),size,0)
@@ -63,22 +71,17 @@ class Ball:
         #man
         
     def move1(self):
-        #if self.g_r > 0:
-        self.vv += self.g_r * t
-        
-        self.y += self.vv/t
-        self.dis = h-self.y
         self.t += t
-        self.speed = self.vv/t
-        print("Distance= " + str(self.dis))
-        print("Speed=" + str(self.speed))
+        self.vv += self.g_r * t
+        self.y += self.vv*t
+        self.dis = h-self.y
+        
+        self.speed = self.vv
+        #print("Distance= " + str(self.dis))
+        #print("Speed=" + str(self.speed))
+        
+        print("Time= " + str(self.t))
  
-    def loop(self):
-        if self.y == 600:
-            self.y = 0
-        elif self.y > 600:
-            self.y = 0
-    
     def Onscreen(self):
         textsurface1 = myfont.render("speed= " + str(self.speed), False, (0, 0, 0))
         screen.blit(textsurface1,(0,0))
@@ -92,7 +95,8 @@ class Ball:
         screen.blit(textsurface3,(0,100))
         textsurface3 = myfont.render("acceleration " + str(self.g_r), False, (0, 0, 0))
         screen.blit(textsurface3,(0,150))
-    
+           
+            
     def fysik(self):
             self.rho = 1.3953329106*0.9998570739**self.dis
             #self.rho = 1
@@ -101,13 +105,30 @@ class Ball:
             self.g_h = g_0*(re/(re+self.dis))**2
             #self.g_h = g_0
             self.g_r = self.g_h + self.g_air
-            
-            print("Luftmodstand  " + str(self.g_air))
-            print("RHO  "+str(self.rho))
-            print("GR  " +str(self.g_r))
-            
-    
+           
 
+            
+           
+            #print("Luftmodstand  " + str(self.g_air))
+            #print("RHO  "+str(self.rho))
+            #print("GR  " +str(self.g_r))
+            #print("dis= " + str(self.dis))
+            #print("pres=" + str(self.pres))
+            
+            #print("rho = " + str(self.rho))
+            
+    def air_speed(self):
+            if 0 < self.dis <=11000:
+                self.temp = 15.04-0.00649*self.dis
+            if  11000 < self.dis <=25100:
+                self.temp = -56.46
+            if  25100 < self.dis :
+                self.temp = -131.21+0.00299*self.dis
+                
+            self.v_air = math.sqrt(gamma*R*(273.15 + self.temp))
+                              
+            print ("luft speed=" + str(self.v_air))
+            print("temp= " + str(self.temp))
 #Ball Rules
 y = 0
 x1 = 250
@@ -131,14 +152,17 @@ while running: # Keeps the window open until user quits
         #break
     if ball1.y >= length:
         break
-        
-    if ball1.dis < 2000:
-        C_d = 7
-    else:
-        C_d = 1.3  
-    ball1.fysik()
-    ball1.move1()   
     
+    
+    ball1.fysik()
+    ball1.move1()
+    ball1.air_speed()   
+    
+    if ball1.v_air > ball1.vv:
+        background_colour = (255, 255, 235)
+    if ball1.v_air < ball1.vv:
+        background_colour = (0, 255, 0)
+     
     ball1.Onscreen()
     ball1.display()
     
@@ -149,8 +173,7 @@ while running: # Keeps the window open until user quits
     dislist.append(ball1.dis)
     rholist.append(ball1.rho)
     Fblist.append(ball1.F_air)
-    #if ball1.g_r < 0:
-    #   break
+    airlist.append(ball1.v_air)
     pygame.display.flip()
 
 i=0
@@ -160,6 +183,7 @@ worksheet.write(i,2,"Fart/(m/s)")
 worksheet.write(i,3,"Distance til jorden/m")
 worksheet.write(i,4,"Luftdensitet/(kg/m^3)")
 worksheet.write(i,5,"Modsatrettet kraft/N")
+worksheet.write(i,6,"Luft speed")
 worksheet.set_column('D:F', 20, )
 worksheet.set_column('C:C', 12, )
 while i<len(yplt):
@@ -176,6 +200,8 @@ while i<len(yplt):
     worksheet.write(i+1,4,rholist[i])
     
     worksheet.write(i+1,5,Fblist[i])
+    
+    worksheet.write(i+1,6,airlist[i])
     
     i +=1
 workbook.close()
