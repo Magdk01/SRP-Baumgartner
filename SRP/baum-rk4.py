@@ -25,7 +25,7 @@ rholist = []
 Fblist = []
 airlist=[]
 templist=[]
-areslist=[]
+
 g_0 = 9.82 #Gravity
 k = 0.005 #Speed of sim
 t = 1
@@ -117,7 +117,6 @@ class Ball:
             #self.rho = 1.3953329106*0.9998570739**self.dis
             
             self.rho = (self.pres*Molarmass)/(8.3145*(self.temp+273.15))
-            
             self.F_air = -(0.5*self.rho*(self.speed**2)*A*C_d)
             self.g_air = self.F_air/mass
             #self.g_h = g_0*(re/(re+self.dis))**2
@@ -149,6 +148,67 @@ class Ball:
             #print ("luft speed=" + str(self.v_air))
             #print("temp= " + str(self.temp))
             
+class RK4:
+    
+    def __init__ (self,y,x,size,):
+        self.y = y
+        self.size = size
+        self.color = (255,0,0)
+        self.x = x
+        self.t = t
+        self.speed = speed
+        self.dis = h
+        self.rho = 0
+        self.F_air = 0
+        self.g_h = 0
+        self.g_r = 0
+        self.vv = 0
+        self.p = 0
+        self.temp = 0
+        self.pres = 0
+        
+    def display(self):
+        
+        pygame.draw.circle(screen, self.color, (int(self.x),int(self.y/100)),size,0)
+
+        
+    def move2(self):
+        self.t += t
+        self.vv += self.g_r * t
+        self.y += self.vv*t
+        self.dis = h-self.y
+        
+        self.speed = self.vv
+        #print("Distance= " + str(self.dis))
+        #print("Speed=" + str(self.speed))
+        
+        print("Time= " + str(self.t))
+ 
+    def fysikPT(self):
+        if 0 < self.dis <=11000:
+            self.pres = (101.29*((((self.temp+273.1)/288.08)**(5.256))))
+        if  11000 < self.dis <=25100:
+            self.pres = (22.56*math.exp(1.73-0.000157*self.dis))
+        if  25100 < self.dis :
+            self.pres = (2.488*((self.temp+273.1)/216.6)**(-11.388))
+        
+            
+    def fysik(self):
+            #self.rho = 1.3953329106*0.9998570739**self.dis
+            
+            self.rho = (self.pres*Molarmass)/(8.3145*(self.temp+273.15))
+            self.F_air = -(0.5*self.rho*(self.speed**2)*A*C_d)
+            self.g_air = self.F_air/mass
+            #self.g_h = g_0*(re/(re+self.dis))**2
+            self.g_h= (6.67*10**(-11))*((m_earth)/((re+self.dis)**2))
+            self.g_r = self.g_h + self.g_air
+            #print("Luftmodstand  " + str(self.g_air))
+            #print("RHO  "+str(self.rho))
+            #print("GR  " +str(self.g_r))
+            print("dis= " + str(self.dis))
+            print("pres=" + str(self.pres)
+
+
 
 #ball rules
 y = 0
@@ -160,6 +220,7 @@ screenpos = 0
 
 
 ball1 = Ball(y,x1,size,)
+ball2 = RK4(y,x2,size,)
 
 
 
@@ -184,6 +245,10 @@ while running: # Keeps the window open until user quits
     ball1.fysik()
     ball1.move1()
     
+    ball2.fysikPT()
+    ball2.fysik()
+    ball2.move2()
+    
     
     if ball1.v_air > ball1.vv:
         background_colour = (255, 255, 235)
@@ -192,6 +257,7 @@ while running: # Keeps the window open until user quits
      
     ball1.Onscreen()
     ball1.display()
+    ball2.display()
     
    
 
@@ -206,7 +272,6 @@ while running: # Keeps the window open until user quits
     Fblist.append(ball1.F_air)
     airlist.append(ball1.v_air)
     templist.append(ball1.temp)
-    areslist.append(ball1.g_r)
     pygame.display.flip()
 
 i=0
@@ -220,8 +285,6 @@ worksheet.write(i,6,"Luft speed")
 worksheet.write(i,7,"Temperatur")
 worksheet.set_column('D:F', 20, )
 worksheet.set_column('C:C', 12, )
-worksheet.write(i,8,"resulterende acceleration")
-
 while i<len(yplt):
     time = i*t+t
     
@@ -240,9 +303,6 @@ while i<len(yplt):
     worksheet.write(i+1,6,airlist[i])
     
     worksheet.write(i+1,7,templist[i])
-    
-    worksheet.write(i+1,8,areslist[i])
-
     
     i +=1
 workbook.close()
