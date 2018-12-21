@@ -123,7 +123,7 @@ class Ball:
             #self.g_h = g_0*(re/(re+self.dis))**2
             self.g_h= (6.67*10**(-11))*((m_earth)/((re+self.dis)**2))
             self.g_r = self.g_h + self.g_air
-           
+            print("rho= " + str(self.rho))
 
             
            
@@ -197,7 +197,7 @@ while running: # Keeps the window open until user quits
 
     
     
-    time.sleep(k)
+    time.sleep(0.50)
     
     yplt.append(ball1.y)
     spdlist.append(ball1.speed)
